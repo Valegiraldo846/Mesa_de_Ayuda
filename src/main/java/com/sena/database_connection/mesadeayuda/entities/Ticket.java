@@ -30,7 +30,7 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     private Estado estado;
 
-    private LocalDateTime creadoEn;
+    public LocalDateTime creadoEn;
 
     private LocalDateTime slaVenceEn;
 
