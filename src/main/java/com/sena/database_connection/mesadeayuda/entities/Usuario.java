@@ -1,5 +1,6 @@
 package com.sena.database_connection.mesadeayuda.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sena.database_connection.mesadeayuda.enums.Rol;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,14 +24,17 @@ public class Usuario {
 
     private String email;
 
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
     private Rol rol;
 
     @OneToMany(mappedBy = "creadoPor")
+    @JsonIgnore
     private List<Ticket> tickets;
 
     @OneToMany(mappedBy = "usuario")
+    @JsonIgnore
     private List<RefreshToken> refreshTokens;
 }
