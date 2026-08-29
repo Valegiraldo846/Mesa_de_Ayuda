@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "02-Auth-Logout",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000002",
+    "description": "Prueba de logout y revocacion del refresh token.\n- POST /api/auth/logout con el refreshToken del usuario en el body -> 200.\n- Nuevo /api/auth/refresh con ese mismo refreshToken -> 401 (revocado).\n\nNOTA: este flujo solo se valida UNA vez por refresh token; volver a ejecutar la coleccion\nrequiere haber hecho login de nuevo (coleccion 01) para obtener un refresh token fresco.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Logout usuario -> 200 (revoca refresh token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenUsuario}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"refreshToken\": \"{{refreshUsuario}}\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout -> 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Mensaje de logout exitoso', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.mensaje).to.eql('Logout exitoso');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh con token revocado -> 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"refreshToken\": \"{{refreshUsuario}}\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/refresh"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Refresh token revocado -> 401 (comportamiento real de la API)', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Mensaje de token revocado', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.eql('Refresh token revocado');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

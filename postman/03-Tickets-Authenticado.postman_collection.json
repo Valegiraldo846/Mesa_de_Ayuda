@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "03-Tickets-Authenticado",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000003",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Creacion de tickets con calculo automatico de SLA y consultas del usuario autenticado.\n- Crear tickets ALTA (SLA 4h), MEDIA (SLA 24h) y BAJA (SLA 72h) -> 201.\n- Validaciones de ticket: prioridad invalida, titulo nulo, descripcion nula y prioridad nula -> 400.\n- Ticket creado por ADMIN (guarda ticketAjenoId) para probar acceso de SOPORTE a ticket ajeno.\n- GET /api/tickets/mios (soporte y usuario) -> 200.\n- GET /api/tickets/{id}: dueno (200), SOPORTE no dueno (200), USUARIO no dueno (403), inexistente (404).\n\nNOTA: la creacion de tickets exige rol SOPORTE o ADMIN (SecurityConfig). Se usa tokenSoporte/tokenAdmin. El endpoint POST /api/tickets devuelve la entidad Ticket (sin campo vencido); el campo vencido aparece en los DTO de consulta (mios, por id, etc)."
+  },
+  "item": [
+    {
+      "name": "Crear ticket ALTA -> 201 (SLA 4h)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"No abre la impresora\", \"descripcion\": \"Error de conexion al imprimir\", \"prioridad\": \"ALTA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Crear ticket ALTA -> 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('SLA calculado automaticamente: +4 horas', function () {",
+              "    const body = pm.response.json();",
+              "    const creado = new Date(body.creadoEn);",
+              "    const sla = new Date(body.slaVenceEn);",
+              "    const diffHoras = (sla - creado) / (3600 * 1000);",
+              "    pm.expect(diffHoras).to.be.approximately(4, 0.01);",
+              "    pm.expect(body.estado).to.eql('ABIERTO');",
+              "});",
+              "",
+              "pm.test('Guarda id del ticket en el entorno', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.be.a('number');",
+              "    pm.environment.set('ticketId', body.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket MEDIA -> 201 (SLA 24h)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Red lenta\", \"descripcion\": \"El correo tarda en cargar\", \"prioridad\": \"MEDIA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Crear ticket MEDIA -> 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('SLA calculado automaticamente: +24 horas', function () {",
+              "    const body = pm.response.json();",
+              "    const creado = new Date(body.creadoEn);",
+              "    const sla = new Date(body.slaVenceEn);",
+              "    const diffHoras = (sla - creado) / (3600 * 1000);",
+              "    pm.expect(diffHoras).to.be.approximately(24, 0.01);",
+              "    pm.expect(body.estado).to.eql('ABIERTO');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket BAJA -> 201 (SLA 72h)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Actualizar version\", \"descripcion\": \"Solicitud de actualizacion del sistema\", \"prioridad\": \"BAJA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Crear ticket BAJA -> 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('SLA calculado automaticamente: +72 horas', function () {",
+              "    const body = pm.response.json();",
+              "    const creado = new Date(body.creadoEn);",
+              "    const sla = new Date(body.slaVenceEn);",
+              "    const diffHoras = (sla - creado) / (3600 * 1000);",
+              "    pm.expect(diffHoras).to.be.approximately(72, 0.01);",
+              "    pm.expect(body.estado).to.eql('ABIERTO');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket: prioridad invalida -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Ticket invalido\", \"descripcion\": \"Prioridad no existe\", \"prioridad\": \"CRITICA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Prioridad invalida -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket: titulo nulo -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": null, \"descripcion\": \"Sin titulo\", \"prioridad\": \"ALTA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Titulo nulo -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket: descripcion nula -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Sin descripcion\", \"descripcion\": null, \"prioridad\": \"MEDIA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Descripcion nula -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket: prioridad nula -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Sin prioridad\", \"descripcion\": \"Falta la prioridad\", \"prioridad\": null }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Prioridad nula -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/mios (soporte) -> 200",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/mios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Listar mis tickets -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('La lista incluye el ticket creado', function () {",
+              "    const arr = pm.response.json();",
+              "    const ids = arr.map(t => t.id);",
+              "    pm.expect(ids).to.include(Number(pm.environment.get('ticketId')));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/mios (usuario) -> 200",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenUsuario}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/mios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Listar mis tickets (usuario) -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Respuesta es un arreglo', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/{id} (dueno soporte) -> 200",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ver ticket propio -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Ticket corresponde al id guardado', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.eql(Number(pm.environment.get('ticketId')));",
+              "    pm.expect(body.titulo).to.eql('No abre la impresora');",
+              "    pm.expect(body.vencido).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/{id} (usuario, no dueno) -> 403",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenUsuario}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no puede ver ticket ajeno -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/99999 (inexistente) -> 404",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/99999"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ticket inexistente -> 404', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test('Mensaje de recurso no encontrado', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.include('Ticket no encontrado');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear ticket ADMIN -> 201 (guarda ticketAjenoId)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Servidor caido\", \"descripcion\": \"Ticket creado por el admin\", \"prioridad\": \"ALTA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Crear ticket con ADMIN -> 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Guarda ticketAjenoId en el entorno', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.be.a('number');",
+              "    pm.environment.set('ticketAjenoId', body.id);",
+              "    pm.expect(body.creadoPor.nombre).to.eql('Admin Test');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/{ticketAjenoId} (soporte, no dueno) -> 200",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenSoporte}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/{{ticketAjenoId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('SOPORTE puede ver ticket ajeno -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('El ticket corresponde al creado por ADMIN', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.eql(Number(pm.environment.get('ticketAjenoId')));",
+              "    pm.expect(body.creadoPorNombre).to.eql('Admin Test');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "05-Admin-Soporte",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000005",
+    "description": "Ascenso de un usuario al rol SOPORTE (solo ADMIN).\n- POST /api/admin/soporte con token ADMIN -> 200 (usuario@test.com pasa a SOPORTE).\n- Email inexistente -> 404.\n- Con token de un usuario sin rol ADMIN -> 403.\n\nNOTA: ejecutar ESTA coleccion DESPUES de la 06-Casos-Negativos, porque el ascenso convierte al\nusuario@test.com de USUARIO a SOPORTE y ya no podria usarse para probar el 403.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Ascender usuario@test.com a SOPORTE (admin) -> 200",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"usuario@test.com\" }"
+        },
+        "url": "{{baseUrl}}/api/admin/soporte"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ascender a SOPORTE -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Mensaje confirma el ascenso', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.mensaje).to.include('usuario@test.com');",
+              "    pm.expect(body.mensaje).to.include('SOPORTE');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ascender email inexistente -> 404",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"noexiste@test.com\" }"
+        },
+        "url": "{{baseUrl}}/api/admin/soporte"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Email inexistente -> 404', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ascender con token de USUARIO -> 403",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"soporte@test.com\" }"
+        },
+        "url": "{{baseUrl}}/api/admin/soporte"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no puede ascender -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

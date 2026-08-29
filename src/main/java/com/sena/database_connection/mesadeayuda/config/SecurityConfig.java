@@ -38,13 +38,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/ping").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/tickets").hasAnyRole("SOPORTE", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tickets/mios").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/vencidos").hasAnyRole("SOPORTE", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tickets/{id}").authenticated()
 
                         .requestMatchers(HttpMethod.GET, "/api/tickets").hasAnyRole("SOPORTE", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/tickets/{id}/estado").hasAnyRole("SOPORTE", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/tickets/vencidos").hasAnyRole("SOPORTE", "ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/admin/soporte").hasRole("ADMIN")
 

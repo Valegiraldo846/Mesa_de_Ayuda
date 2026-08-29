@@ -1,0 +1,285 @@
+{
+  "info": {
+    "name": "06-Casos-Negativos",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000006",
+    "description": "Pruebas de seguridad: accesos sin token, token invalido y rol insuficiente.\nEsta coleccion crea su propio usuario USUARIO (cliente@test.com) para no depender de otros roles.\n- Registro y login del cliente. -> tokenCliente.\n- 401 sin token y con token invalido (Bearer abc.def.ghi).\n- 403 al usar rutas de rol SOPORTE/ADMIN con un usuario USUARIO.\n- 401 al renovar con un refresh token inexistente.\n\nEJECUTAR ANTES de la coleccion 05 (esta conserva un rol USUARIO para las pruebas de 403).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Registro cliente@test.com (USUARIO auxiliar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Cliente Negativo\", \"email\": \"cliente@test.com\", \"password\": \"cliente123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registro 201 o 409 si ya existe', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login cliente -> 200 (guarda tokenCliente)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"cliente@test.com\", \"password\": \"cliente123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login cliente -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Guarda tokenCliente', function () {",
+              "    const body = pm.response.json();",
+              "    pm.environment.set('tokenCliente', body.accessToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/mios sin token -> 401",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tickets/mios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ruta protegida sin token -> 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets/mios token invalido -> 401",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer abc.def.ghi"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets/mios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Token malformado -> 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/tickets (cliente) -> 403",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no lista todos -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/tickets (cliente) -> 403",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"titulo\": \"Sin permiso\", \"descripcion\": \"USUARIO no crea tickets\", \"prioridad\": \"ALTA\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no crea tickets -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/tickets/{id}/estado (cliente) -> 403",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"estado\": \"RESUELTO\" }"
+        },
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}/estado"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no cambia estado -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/soporte (cliente) -> 403",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"soporte@test.com\" }"
+        },
+        "url": "{{baseUrl}}/api/admin/soporte"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('USUARIO no asciende -> 403', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/auth/refresh token inexistente -> 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"refreshToken\": \"refresh-token-inexistente-random\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/refresh"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Refresh token inexistente -> 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Mensaje de token no encontrado', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.eql('Refresh token no encontrado');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

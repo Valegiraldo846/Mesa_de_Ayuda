@@ -1,0 +1,37 @@
+{
+  "info": {
+    "name": "00-Ping",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Verifica que la API esta viva.\n- GET /api/ping -> 200 OK con {\"mensaje\": \"pong\"}"
+  },
+  "item": [
+    {
+      "name": "Ping - API viva",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ping"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Respuesta 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Body contiene pong', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.mensaje).to.eql('pong');",
+              "});",
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

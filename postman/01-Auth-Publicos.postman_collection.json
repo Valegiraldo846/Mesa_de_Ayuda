@@ -1,0 +1,383 @@
+{
+  "info": {
+    "name": "01-Auth-Publicos",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pruebas de autenticacion publica.\n- Registro de los 3 usuarios de prueba (201 o 409 si ya existen).\n- Validaciones de registro: email duplicado (409), password corta (400), email invalido (400).\n- Login de cada usuario (200) y captura automatica de tokens en el entorno.\n- Login con password incorrecta (401).\n- Renovacion del access token con refresh token valido (200).\n\nNOTA: el endpoint de registro siempre crea usuarios con rol USUARIO. Para que los tests de rol funcionen debe existir un ADMIN en la BD (ver README o seed manual)."
+  },
+  "item": [
+    {
+      "name": "Registro: usuario@test.com",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Usuario Test\", \"email\": \"usuario@test.com\", \"password\": \"usuario123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registro 201 o 409 si ya existe', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});",
+              "",
+              "pm.test('Email creado correcto', function () {",
+              "    if (pm.response.code === 201) {",
+              "        const body = pm.response.json();",
+              "        pm.expect(body.email).to.eql('usuario@test.com');",
+              "        pm.expect(body.rol).to.eql('USUARIO');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro: soporte@test.com",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Soporte Test\", \"email\": \"soporte@test.com\", \"password\": \"soporte123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registro 201 o 409 si ya existe', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro: admin@test.com",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Admin Test\", \"email\": \"admin@test.com\", \"password\": \"admin1234\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registro 201 o 409 si ya existe', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro: email duplicado -> 409",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Usuario Test\", \"email\": \"usuario@test.com\", \"password\": \"usuario123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Email duplicado -> 409 Conflict', function () {",
+              "    pm.response.to.have.status(409);",
+              "});",
+              "",
+              "pm.test('Mensaje de error', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.eql('El email ya est\u00e1 registrado');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro: password menor a 6 -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Usuario Test\", \"email\": \"passwordcorta@test.com\", \"password\": \"123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Password corta -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro: email invalido -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"nombre\": \"Usuario Test\", \"email\": \"correo-invalido\", \"password\": \"usuario123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/registro"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Email invalido -> 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login: usuario -> 200 (guarda tokens)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"usuario@test.com\", \"password\": \"usuario123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login usuario -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Guarda accessToken y refreshToken del usuario', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.accessToken).to.not.be.empty;",
+              "    pm.expect(body.refreshToken).to.not.be.empty;",
+              "    pm.environment.set('tokenUsuario', body.accessToken);",
+              "    pm.environment.set('refreshUsuario', body.refreshToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login: soporte -> 200 (guarda tokens)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"soporte@test.com\", \"password\": \"soporte123\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login soporte -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Guarda accessToken y refreshToken de soporte', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.accessToken).to.not.be.empty;",
+              "    pm.expect(body.refreshToken).to.not.be.empty;",
+              "    pm.environment.set('tokenSoporte', body.accessToken);",
+              "    pm.environment.set('refreshSoporte', body.refreshToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login: admin -> 200 (guarda tokens)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"admin@test.com\", \"password\": \"admin1234\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login admin -> 200 (requiere usuario ADMIN precargado en BD)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Guarda accessToken y refreshToken de admin', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.accessToken).to.not.be.empty;",
+              "    pm.expect(body.refreshToken).to.not.be.empty;",
+              "    pm.environment.set('tokenAdmin', body.accessToken);",
+              "    pm.environment.set('refreshAdmin', body.refreshToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login: password incorrecta -> 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"usuario@test.com\", \"password\": \"password-incorrecta\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login con password incorrecta -> 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh: renovar access token -> 200",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"refreshToken\": \"{{refreshSoporte}}\" }"
+        },
+        "url": "{{baseUrl}}/api/auth/refresh"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Refresh token valido -> 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Devuelve nuevo accessToken y actualiza entorno', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.accessToken).to.not.be.empty;",
+              "    pm.environment.set('tokenSoporte', body.accessToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
