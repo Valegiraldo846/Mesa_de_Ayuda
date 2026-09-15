@@ -31,7 +31,7 @@ public class UsuarioService {
         usuario.setNombre(registroRequest.getNombre());
         usuario.setEmail(registroRequest.getEmail());
         usuario.setPassword(passwordEncoder.encode(registroRequest.getPassword()));
-        usuario.setRol(Rol.USUARIO);
+        usuario.setRol(registroRequest.getRol() != null ? registroRequest.getRol() : Rol.USUARIO);
 
         return usuarioRepository.save(usuario);
     }

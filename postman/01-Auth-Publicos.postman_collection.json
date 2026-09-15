@@ -3,7 +3,7 @@
     "name": "01-Auth-Publicos",
     "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Pruebas de autenticacion publica.\n- Registro de los 3 usuarios de prueba (201 o 409 si ya existen).\n- Validaciones de registro: email duplicado (409), password corta (400), email invalido (400).\n- Login de cada usuario (200) y captura automatica de tokens en el entorno.\n- Login con password incorrecta (401).\n- Renovacion del access token con refresh token valido (200).\n\nNOTA: el endpoint de registro siempre crea usuarios con rol USUARIO. Para que los tests de rol funcionen debe existir un ADMIN en la BD (ver README o seed manual)."
+    "description": "Pruebas de autenticacion publica.\n- Registro de los 3 usuarios de prueba (201 o 409 si ya existen), cada uno con su rol correspondiente (USUARIO, SOPORTE, ADMIN).\n- Validaciones de registro: email duplicado (409), password corta (400), email invalido (400).\n- Login de cada usuario (200) y captura automatica de tokens en el entorno.\n- Login con password incorrecta (401).\n- Renovacion del access token con refresh token valido (200)."
   },
   "item": [
     {
@@ -56,7 +56,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{ \"nombre\": \"Soporte Test\", \"email\": \"soporte@test.com\", \"password\": \"soporte123\" }"
+          "raw": "{ \"nombre\": \"Soporte Test\", \"email\": \"soporte@test.com\", \"password\": \"soporte123\", \"rol\": \"SOPORTE\" }"
         },
         "url": "{{baseUrl}}/api/auth/registro"
       },
@@ -68,6 +68,14 @@
             "exec": [
               "pm.test('Registro 201 o 409 si ya existe', function () {",
               "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});",
+              "",
+              "pm.test('Soporte creado con rol SOPORTE', function () {",
+              "    if (pm.response.code === 201) {",
+              "        const body = pm.response.json();",
+              "        pm.expect(body.email).to.eql('soporte@test.com');",
+              "        pm.expect(body.rol).to.eql('SOPORTE');",
+              "    }",
               "});"
             ]
           }
@@ -86,7 +94,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{ \"nombre\": \"Admin Test\", \"email\": \"admin@test.com\", \"password\": \"admin1234\" }"
+          "raw": "{ \"nombre\": \"Admin Test\", \"email\": \"admin@test.com\", \"password\": \"admin1234\", \"rol\": \"ADMIN\" }"
         },
         "url": "{{baseUrl}}/api/auth/registro"
       },
@@ -98,6 +106,14 @@
             "exec": [
               "pm.test('Registro 201 o 409 si ya existe', function () {",
               "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+              "});",
+              "",
+              "pm.test('Admin creado con rol ADMIN', function () {",
+              "    if (pm.response.code === 201) {",
+              "        const body = pm.response.json();",
+              "        pm.expect(body.email).to.eql('admin@test.com');",
+              "        pm.expect(body.rol).to.eql('ADMIN');",
+              "    }",
               "});"
             ]
           }
